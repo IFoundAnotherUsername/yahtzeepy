@@ -1,0 +1,27 @@
+Filename
+[gameid]_[finalscore].txt
+
+Every row represents a complete game state after that the only allowed re-roll is made.
+Only one place decision is taken per turn. Therefore there are always exactly 8 rows in a file. 
+Line nr 1 is turn 1 etc.
+
+Every row contains a python list with the following structure
+
+Index		Description			Value
+0		Ones field available		0=NO, 1=YES  
+1		Twos field available		0=NO, 1=YES  
+2		Threes field available		0=NO, 1=YES  	
+3		Fours field available		0=NO, 1=YES  
+4		Fives field available		0=NO, 1=YES  
+5		Sixes field available		0=NO, 1=YES  
+6		1-Pair field available		0=NO, 1=YES  
+7		3-of-a-kind field avail.	0=NO, 1=YES  	
+8		Number of dice with val 1	0-3
+9		Number of dice with val 2	0-3
+10		Number of dice with val 3	0-3 
+11		Number of dice with val 4	0-3
+12		Number of dice with val 5	0-3
+13		Number of dice with val 6   	0-3
+
+In the example file the available fields are chosen from ones to 3-of-a-kind.
+Only ones are rolled every turn, represented by the value 3 at index8 for each row.

@@ -1,0 +1,21 @@
+Filename
+[gameid]_[finalscore].txt
+
+Every row represents a place decision. 
+Since only one placement is allowed per turn there are always exactly 8 rows in a file. Line nr 1 is turn 1 etc.
+
+Every row contains a python list with the following structure
+
+Index		Description					Value
+0		Place dice total in ’Ones’ or strike		0=NO, 1=YES 
+1		Place dice total in ’Twos’ or strike		0=NO, 1=YES 
+2		Place dice total in ’Threes’ or strike	0=NO, 1=YES 
+3		Place dice total in ’Fours’ or strike		0=NO, 1=YES 
+4		Place dice total in ’Fives’ or strike  	0=NO, 1=YES
+5		Place dice total in ’Sixes’ or strike		0=NO, 1=YES 
+6		Place dice total in ’1-pair’ or strike	0=NO, 1=YES 
+7		Place dice total in ’3-kind’ or strike	0=NO, 1=YES 
+
+In the example file the place decisions are made from ’Ones’ to ’3-kind’.
+
+NB: This data structure can probably be simplified.

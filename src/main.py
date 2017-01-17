@@ -13,11 +13,10 @@ import random
 # b = tf.constant(32)
 # print(sess.run(a + b))
 
+SIDES_PER_DIE = 6
 
 def roll_dice(num_dice):
-    return [random.randint(1, 6) for _ in range(num_dice)]
-
-SIDES_PER_DIE = 6
+    return [random.randint(1, SIDES_PER_DIE) for _ in range(num_dice)]
 
 def dice_to_dice_counts(dice):
     return [dice.count(x + 1) for x in range(SIDES_PER_DIE)]
@@ -62,7 +61,7 @@ class YahtzeePlayer:
         returns new dice counts for kept dice
         """
         print('testing keep for {}...'.format(dice_counts))
-        return dice_counts[:]
+        return [min(x, 1) for x in dice_counts]
 
     def assign_dice(self, dice_counts):
         print('testing assign for {}...'.format(dice_counts))
@@ -72,12 +71,13 @@ class YahtzeePlayer:
 
 class YahtzeeGame:
 
-    def __init__(self, dice_count=5, rethrow_count=2, player_count=2):
+    def __init__(self, dice_count=5, rethrow_count=2, player_count=2, round_count=5):
         self.dice_count = dice_count
         self.rethrow_count = rethrow_count
         self.player_count = player_count
         self.round = 0
         self.players = [YahtzeePlayer(x) for x in range(player_count)]
+        self.round_count = round_count
         print('Game started\n')
 
     def roll(self, dice_count):
@@ -89,7 +89,7 @@ class YahtzeeGame:
     def roll_until_final_dice(self, player, dice):
         for i in range(self.rethrow_count):
             # rethrow non-kept
-            kept_dice = player.keep_dice(dice_to_dice_counts(dice))
+            kept_dice = dice_counts_to_dice(player.keep_dice(dice_to_dice_counts(dice)))
             if len(kept_dice) == self.dice_count:
                 print('kept all dice!')
                 break # if all kept, jump to assign
@@ -121,16 +121,17 @@ class YahtzeeGame:
         print('round {} end\n'.format(self.round))
         self.round += 1
 
-        if self.round > 5:
+        if self.round > self.round_count:
             print('Game over')
             return False
         else:
             return True
 
-dice_count = 6
-rethrow_count = 3
+dice_count = 3
+rethrow_count = 1
 player_count = 2
-game = YahtzeeGame(dice_count, rethrow_count, player_count)
+round_count = 2 # 15
+game = YahtzeeGame(dice_count, rethrow_count, player_count, round_count)
 
 while game.update():
     pass
