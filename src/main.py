@@ -139,7 +139,7 @@ class YahtzeePlayer:
 
 class YahtzeeGame:
 
-    def __init__(self, dice_count, rethrow_count, player_count, round_count, filepath, logging_threshold):
+    def __init__(self, dice_count, rethrow_count, player_count, round_count, filepath, logging_threshold, game_id):
         self.dice_count = dice_count
         self.rethrow_count = rethrow_count
         self.player_count = player_count
@@ -148,6 +148,7 @@ class YahtzeeGame:
         self.round_count = round_count
         self.filepath = filepath
         self.logging_threshold = logging_threshold
+        self.game_id = game_id
 
         print('Game started\n')
 
@@ -202,7 +203,7 @@ class YahtzeeGame:
                 print('player {}'.format(player.player_index + 1), ': {}'.format(player.score), 'points')
             if (self.filepath != '' and best_score >= self.logging_threshold):
 
-                game_id = random.randint(1,40000) #todo set with argument
+                game_id = self.game_id
                 score = self.players[winner].score
                 filename = 'g'+str(game_id)+'_'+str(score)+'.txt'
 
@@ -247,9 +248,10 @@ def main(argv):
     round_count = 8
     filepath = ''
     logging_threshold = 20
+    game_id = 0
 
     try:
-        opts, args = getopt.getopt(argv,"h:d:t:p:r:f:l:",["dice=","throws=","players=","rounds=","fpath=","logthresh="])
+        opts, args = getopt.getopt(argv,"h:d:t:p:r:f:l:i:",["dice=","throws=","players=","rounds=","fpath=","logthresh=","id="])
     except getopt.GetoptError:
         print('main.py -d <dice> -t <throws> -p <players> -r <rpunds> -f <filepath> -l <logging_threshold')
         sys.exit(2)
@@ -268,11 +270,13 @@ def main(argv):
         elif opt in ("-f", "--fpath"):
             filepath = arg
         elif opt in ("-l", "--logthresh"):
-            logging_threshold = arg
+            logging_threshold = int(arg)
+        elif opt in ("-i", "--id"):
+            game_id = arg
 
     print('Will start a game with', dice_count, ' dice, ', player_count, 'players.' )
 
-    game = YahtzeeGame(dice_count, rethrow_count, player_count, round_count, filepath, logging_threshold)
+    game = YahtzeeGame(dice_count, rethrow_count, player_count, round_count, filepath, logging_threshold, game_id)
 
     while game.update():
         pass
