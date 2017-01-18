@@ -9,8 +9,14 @@ Yahtzee bot in Python
 * Tensorflow configuration: TBD
 
 ## How to train neural nets
-* Use training data from input/keeper to train a neural net on what dice to keep
-* Use training data from input/placer to train a neural net on where to place dice
+
+Start data generation by feeding number of iterations to the script
+```
+./generate_data.sh <number of iterations>
+```
+
+* Use training data from data/keeper to train a neural net on what dice to keep
+* Use training data from data/placer to train a neural net on where to place dice
 
 
 
