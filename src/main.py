@@ -89,6 +89,10 @@ class YahtzeePlayer:
         self.player_index = player_index
         self.options = {'ones': 0, 'twos': 0, 'threes': 0, 'fours': 0, 'fives': 0, 'sixes': 0, 'pair': 0, '3-kind': 0}
         self.score = 0
+        self.keeper_inputlog = ''
+        self.keeper_outputlog = ''
+        self.placer_inputlog = ''
+        self.placer_outputlog = ''
 
     def random_assign(self, dice_counts):
         open_options = []
@@ -117,29 +121,33 @@ class YahtzeePlayer:
         returns new dice counts for kept dice
         """
         print('testing keep for {}...'.format(dice_counts))
-        return [min(x, 1) for x in dice_counts]
+        keep_result = [min(x, 1) for x in dice_counts]
+        self.keeper_inputlog += str(self.options) + str(dice_counts) + '\n'
+        self.keeper_outputlog += str(keep_result) + '\n'
+        return keep_result
 
     def assign_dice(self, dice_counts):
         print('testing assign for {}...'.format(dice_counts))
         print(dice_counts_to_dice(dice_counts))
+        self.placer_inputlog += str(self.options) + str(dice_counts) + '\n'
         round_score = self.random_assign(dice_counts)
+        self.placer_outputlog += str(self.options) + '\n'
         print('scored', round_score)
         self.score += round_score
         return True
 
 
-
 class YahtzeeGame:
 
-    def __init__(self, dice_count, rethrow_count, player_count, round_count, inputfile, outputfile):
+    def __init__(self, dice_count, rethrow_count, player_count, round_count, filepath, logging_threshold):
         self.dice_count = dice_count
         self.rethrow_count = rethrow_count
         self.player_count = player_count
-        self.round = 0
+        self.round = 1
         self.players = [YahtzeePlayer(x) for x in range(player_count)]
         self.round_count = round_count
-        self.inputfile = inputfile
-        self.outputfile = outputfile
+        self.filepath = filepath
+        self.logging_threshold = logging_threshold
 
         print('Game started\n')
 
@@ -185,8 +193,45 @@ class YahtzeeGame:
         self.round += 1
 
         if self.round > self.round_count:
+            best_score = 0
+            winner = 0
             for player in self.players:
+                if player.score > best_score:
+                    best_score = player.score
+                    winner = player.player_index
                 print('player {}'.format(player.player_index + 1), ': {}'.format(player.score), 'points')
+            if (self.filepath != '' and best_score >= self.logging_threshold):
+
+                game_id = random.randint(1,40000) #todo set with argument
+                score = self.players[winner].score
+                filename = 'g'+str(game_id)+'_'+str(score)+'.txt'
+
+                # Get the data logs
+                keeper_input = self.players[winner].keeper_inputlog
+                keeper_output = self.players[winner].keeper_outputlog
+                placer_input = self.players[winner].placer_inputlog
+                placer_output = self.players[winner].placer_outputlog
+
+                # Create files
+                keeper_inputfile = self.filepath + '/keeper/input/' + filename
+                keeper_outputfile = self.filepath + '/keeper/output/' + filename
+                placer_inputfile = self.filepath + '/placer/input/' + filename
+                placer_outputfile = self.filepath + '/placer/output/' + filename
+
+                # Write to files
+                f = open(keeper_inputfile, 'w')
+                f.write(keeper_input)
+                f.close()
+                f = open(keeper_outputfile, 'w')
+                f.write(keeper_output)
+                f.close()
+                f = open(placer_inputfile, 'w')
+                f.write(placer_input)
+                f.close()
+                f = open(placer_outputfile, 'w')
+                f.write(placer_output)
+                f.close()
+                print('Game has been recorded.')
             print('Game over')
             return False
         else:
@@ -199,18 +244,18 @@ def main(argv):
     dice_count = 3
     rethrow_count = 1
     player_count = 2
-    round_count = 7
-    inputfile = ''
-    outputfile = ''
+    round_count = 8
+    filepath = ''
+    logging_threshold = 20
 
     try:
-        opts, args = getopt.getopt(argv,"h:d:t:p:r:i:o:",["dice=","throws=","players=","rounds=","ifile=","ofile="])
+        opts, args = getopt.getopt(argv,"h:d:t:p:r:f:l:",["dice=","throws=","players=","rounds=","fpath=","logthresh="])
     except getopt.GetoptError:
-        print('main.py -d <dice> -t <throws> -p <players> -r <rpunds> -i <inputfile> -o <outputfile>')
+        print('main.py -d <dice> -t <throws> -p <players> -r <rpunds> -f <filepath> -l <logging_threshold')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print('main.py -d <dice> -t <throws> -p <players> -r <rpunds> -i <inputfile> -o <outputfile>')
+            print('main.py -d <dice> -t <throws> -p <players> -r <rpunds> -f <filepath> -l <logging_threshold')
             sys.exit()
         elif opt in ("-d", "--dice"):
             dice_count = int(arg)
@@ -220,14 +265,14 @@ def main(argv):
             player_count = int(arg)
         elif opt in ("-r", "--rounds"):
             round_count = int(arg)
-        elif opt in ("-i", "--ifile"):
-            inputfile = arg
-        elif opt in ("-o", "--ofile"):
-            outputfile = arg
+        elif opt in ("-f", "--fpath"):
+            filepath = arg
+        elif opt in ("-l", "--logthresh"):
+            logging_threshold = arg
 
     print('Will start a game with', dice_count, ' dice, ', player_count, 'players.' )
 
-    game = YahtzeeGame(dice_count, rethrow_count, player_count, round_count, inputfile, outputfile)
+    game = YahtzeeGame(dice_count, rethrow_count, player_count, round_count, filepath, logging_threshold)
 
     while game.update():
         pass

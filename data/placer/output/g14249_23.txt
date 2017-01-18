@@ -1,0 +1,8 @@
+{'3-kind': 0, 'ones': 0, 'pair': 0, 'sixes': 0, 'fours': 0, 'twos': 1, 'fives': 0, 'threes': 0}
+{'3-kind': 1, 'ones': 0, 'pair': 0, 'sixes': 0, 'fours': 0, 'twos': 1, 'fives': 0, 'threes': 0}
+{'3-kind': 1, 'ones': 0, 'pair': 0, 'sixes': 0, 'fours': 1, 'twos': 1, 'fives': 0, 'threes': 0}
+{'3-kind': 1, 'ones': 0, 'pair': 0, 'sixes': 0, 'fours': 1, 'twos': 1, 'fives': 1, 'threes': 0}
+{'3-kind': 1, 'ones': 0, 'pair': 1, 'sixes': 0, 'fours': 1, 'twos': 1, 'fives': 1, 'threes': 0}
+{'3-kind': 1, 'ones': 0, 'pair': 1, 'sixes': 0, 'fours': 1, 'twos': 1, 'fives': 1, 'threes': 1}
+{'3-kind': 1, 'ones': 0, 'pair': 1, 'sixes': 1, 'fours': 1, 'twos': 1, 'fives': 1, 'threes': 1}
+{'3-kind': 1, 'ones': 1, 'pair': 1, 'sixes': 1, 'fours': 1, 'twos': 1, 'fives': 1, 'threes': 1}
