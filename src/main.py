@@ -122,16 +122,16 @@ class YahtzeePlayer:
         """
         print('testing keep for {}...'.format(dice_counts))
         keep_result = [min(x, 1) for x in dice_counts]
-        self.keeper_inputlog += str(self.options) + str(dice_counts) + '\n'
+        self.keeper_inputlog += str(list(self.options.values()) + dice_counts) + '\n'
         self.keeper_outputlog += str(keep_result) + '\n'
         return keep_result
 
     def assign_dice(self, dice_counts):
         print('testing assign for {}...'.format(dice_counts))
         print(dice_counts_to_dice(dice_counts))
-        self.placer_inputlog += str(self.options) + str(dice_counts) + '\n'
+        self.placer_inputlog += str(list(self.options.values()) + dice_counts) + '\n'
         round_score = self.random_assign(dice_counts)
-        self.placer_outputlog += str(self.options) + '\n'
+        self.placer_outputlog += str(list(self.options.values())) + '\n'
         print('scored', round_score)
         self.score += round_score
         return True
@@ -247,7 +247,7 @@ def main(argv):
     player_count = 2
     round_count = 8
     filepath = ''
-    logging_threshold = 20
+    logging_threshold = 0
     game_id = 0
 
     try:
