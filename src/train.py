@@ -1,96 +1,84 @@
-# import tensorflow as tf
+from gym.envs.registration import register, make
 
-# hello = tf.constant('Hello, TensorFlow!')
-# sess = tf.Session()
-# print(sess.run(hello))
-# a = tf.constant(10)
-# b = tf.constant(32)
-# print(sess.run(a + b))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# import gym
-import numpy as np
-import random
 import tensorflow as tf
-# import matplotlib.pyplot as plt
+import tensorflow.contrib.slim as slim
+import numpy as np
+import gym
+#import matplotlib.pyplot as plt
 
-# %matplotlib inline
+#from qlearn import QLearn
+#qlearner = QLearn(range(32), epsilon=0.1, alpha=0.2, gamma=0.9)
 
+register(
+    id='Yahtzee-v0',
+    entry_point='yahtzee:YahtzeeEnv',
+    tags={'wrapper_config.TimeLimit.max_episode_steps': 100}
+)
 
-# env = gym.make('FrozenLake-v0')
-
-fdata = open('data/keeper/input/g1_13.txt').readlines()
-x_data = np.array([eval(x) for x in fdata])
-
-fdata = open('data/keeper/output/g1_13.txt').readlines()
-y_data = np.array([eval(y) for y in fdata])
-
+env = make('Yahtzee-v0')
 
 tf.reset_default_graph()
 
-x = tf.placeholder(tf.float32, [None, 14])
+inputs1 = tf.placeholder(shape=[1, 5], dtype=tf.float32)
+W = tf.Variable(tf.random_uniform([5, 32], 0, 0.01))
+Qout = tf.matmul(inputs1, W)
+predict = tf.argmax(Qout, 1)
 
+nextQ = tf.placeholder(shape=[1, 32], dtype=tf.float32)
+loss = tf.reduce_sum(tf.square(nextQ - Qout))
+trainer = tf.train.AdamOptimizer(learning_rate=0.1)
+updateModel = trainer.minimize(loss)
 
-#These lines establish the feed-forward part of the network used to choose actions
-# x_data = tf.placeholder(shape=[1,14], dtype=tf.int32)
-# y_data = tf.placeholder(shape=[1,6], dtype=tf.int32)
-# W = tf.Variable(tf.random_uniform([14,2],0,0.01))
-# Qout = tf.matmul(x_data, W)
-# predict = tf.argmax(Qout,1)
-
-
-W = tf.Variable(tf.zeros([14, 1]))
-b = tf.Variable(tf.zeros([1, 6]))
-y = tf.nn.softmax(tf.matmul(x, W) + b)
-
-y_ = tf.placeholder(tf.float32, [None, 6])
-
-cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y), reduction_indices=[1]))
-train_step = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entropy)
-
-# W = tf.Variable(tf.random_uniform([1, 14], 0, 1, dtype=tf.float32))
-# b = tf.Variable(tf.zeros([1,14]))
-# y = W * x_data + b
-
-# loss = tf.reduce_mean(tf.square(y - y_))
-# optimizer = tf.train.GradientDescentOptimizer(0.5)
-# train = optimizer.minimize(loss)
 
 init = tf.global_variables_initializer()
 
-# Launch the graph.
-sess = tf.Session()
-sess.run(init)
+# Set learning parameters
+y = .99
+e = 0.1
+g = 0.1
+num_episodes = 1000
+#create lists to contain total rewards and steps per episode
+jList = []
+rList = []
 
-# Fit the line.
-for step in range(8):
-    sess.run(train_step, feed_dict={x: x_data, y_: y_data})
-    if step % 7 == 0:
-        print('step: {}\nW: {}\nb: {}'.format(step, sess.run(W), sess.run(b)))
+saver = tf.train.Saver()
 
+with tf.Session() as sess:
+    sess.run(init)
+    for i in range(num_episodes):
+        #Reset environment and get first new observation
+        s = env.reset()
+        rAll = 0
+        d = False
+        j = 0
+        #The Q-Network
+        while j < 99:
+            j += 1
+            #Choose an action by greedily (with e chance of random action) from the Q-network
+            a, allQ = sess.run([predict, Qout], feed_dict={inputs1: [s]})
+            if np.random.rand(1) < e:
+                a[0] = env.action_space.sample()
+            #Get new state and reward from environment
+            s1, r, d, _ = env.step(a[0])
+            #Obtain the Q' values by feeding the new state through our network
+            Q1 = sess.run(Qout, feed_dict={inputs1: [s1]})
+            #Obtain maxQ' and set our target value for chosen action.
+            maxQ1 = np.max(Q1)
+            targetQ = allQ
+            targetQ[0, a[0]] += e * (r + y * maxQ1 - targetQ[0, a[0]])
+            #oldval = targetQ[0, a[0]]
+            #targetQ[0, a[0]] = oldval + y * (r + g * maxQ1 - oldval)
+            #Train our network using target and predicted Q values
+            _, W1 = sess.run([updateModel, W], feed_dict={inputs1: [s], nextQ: targetQ})
+            rAll += r
+            s = s1
+            if d:
+                #Reduce chance of random action as we train the model.
+                e = 1./((i/50) + 10)
+                break
+        jList.append(j)
+        rList.append(rAll)
 
+    print(saver.save(sess, '1_yahtzee-model'))
 
-
-fdata = open('data/keeper/input/g1_10.txt').readlines()
-x_data = np.array([eval(x) for x in fdata])
-
-fdata = open('data/keeper/output/g1_10.txt').readlines()
-y_data = np.array([eval(y) for y in fdata])
-
-
-correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_,1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-print(sess.run(accuracy, feed_dict={x: x_data, y_: y_data}))
+print ("Percent of succesful episodes: " + str(sum(rList)/num_episodes) + "%")
