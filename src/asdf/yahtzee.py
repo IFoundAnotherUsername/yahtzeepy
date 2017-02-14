@@ -21,6 +21,7 @@ SCORE_NAMES = {
 LEN_SCORE_NAMES = len(SCORE_NAMES)
 NM_REROLLS = 2
 AVAILABLE = -1
+DICE_COUNT = 5
 
 def _sum(x, v):
     return sum([i for i in x if i==v])
@@ -109,12 +110,10 @@ class YahtzeeEnv(gym.Env):
         self.state = None
         self.nb_reroll = NM_REROLLS
 
-        #An action is an integer in the interval [0, 31]. If bit
-        #i (2**i) is on, this corresponds to rolling the ith die.
-        self.action_space = Discrete(32)
-
-        # dice
-        self.observation_space = Box(1, 6, 5)
+        self.action_space = Discrete(LEN_SCORE_NAMES)
+        AVAILABLE_NO = 0
+        AVAILABLE_YES = 1
+        self.observation_space = Box(AVAILABLE_NO, AVAILABLE_YES, LEN_SCORE_NAMES + DICE_COUNT)
 
     def _seed(self, seed=None):
         self.np_radom, seed_1 = gym.utils.seeding.np_random(seed)
@@ -123,7 +122,8 @@ class YahtzeeEnv(gym.Env):
 
     def _reset(self):
         self.score = YahtzeeScoreTable()
-        self.state = [random.randint(1, 6) for i in range(5)]
+        self.dice = self.roll_all()
+        self.state = self.get_state()
         return self.state
 
     def _close(self):
@@ -131,83 +131,44 @@ class YahtzeeEnv(gym.Env):
 
     def _render(self, mode="human", close=False):
         print(repr(self.score))
-        print("Dice:", self.state, "Reroll", NM_REROLLS - self.nb_reroll)
+        print("State:", self.get_state(), "Reroll", NM_REROLLS - self.nb_reroll)
+
+
+    def roll_all(self):
+        return [random.randint(1, 6) for i in range(DICE_COUNT)]
+
+    def get_state(self):
+        return self.score.as_observation() + self.dice
 
     def _step(self, action):
 
         if self.score.is_completed():
             reward = self.score.total()
-            return self.state, 1, True, {}
+            return self.state, 0, True, {}
 
         assert self.action_space.contains(action)
 
-        reward = self.act(action)
+        # reward = self.act(action)
+        score_cell = self.score.table[action]
+        available = score_cell.available
+        matches_dice = score_cell.validator(self.dice)
 
-        return self.state, reward, False, {}
-
-    def act(self, action):
-        newdice = []
-        for i in range(5):
-            mask = 2 ** i
-            if action & mask == 0:
-                newdice.append(self.state[i])
-        dice_to_reroll = 5 - len(newdice)
-
-        if dice_to_reroll:
-            newdice.extend([random.randint(1, 6) for i in range(dice_to_reroll)])
-            newdice.sort()
-            self.state = newdice
-
-        reward = self.random_best_score_from_available_cells(self.state)
-
-        return reward
-
-    def random_best_score_from_available_cells(self, return_max_score=True):
-        reward = 0
-        all_available = []
-        valid_available = []
-
-        for c in range(LEN_SCORE_NAMES):
-            if self.score.table[c].available:
-                all_available.append(c)
-                if self.score.table[c].validator(self.state):
-                    valid_available.append(c)
-
-        if valid_available:
-            if return_max_score:
-                max_score = -1
-                max_available = []
-                for c in valid_available:
-                    c_score = self.score.table[c].score(self.state)
-                    if c_score > max_score:
-                        max_score = c_score
-                        max_available.append(c)
-
-                random.shuffle(max_available)
-                cell = random.choice(max_available)
-            else:
-                random.shuffle(valid_available)
-                cell = random.choice(valid_available)
-
-            i_should_score = random.randint(0, 1)
-            if self.nb_reroll and not i_should_score:
-                self.nb_reroll -= 1
-            else:
-                reward = self.score.table[cell].score(self.state)
-                self.score.table[cell].value = reward
-                self.nb_reroll = NM_REROLLS
-                self.state = [random.randint(1, 6) for i in range(5)]
+        if available and matches_dice:
+            score_cell.value = score_cell.score(self.dice)
+            self.score.table[action] = score_cell
+            self.dice = self.roll_all()
+            reward = 1
+            return self.get_state(), reward, False, {'found_match': True}
+        elif available:
+            score_cell.value = 0
+            self.score.table[action] = score_cell
+            self.dice = self.roll_all()
+            reward = 0
+            return self.get_state(), reward, False, {'found_match': False}
         else:
-            if self.nb_reroll:
-                self.nb_reroll -= 1
-            else:
-                random.shuffle(all_available)
-                cell = random.choice(all_available)
-                self.score.table[cell].value = reward
-                self.nb_reroll = NM_REROLLS
-                self.state = [random.randint(1, 6) for i in range(5)]
-
-        return reward
+            self.dice = self.roll_all()
+            reward = -1
+            return self.get_state(), reward, False, {}
 
     def total_score(self):
         bonus = 0
